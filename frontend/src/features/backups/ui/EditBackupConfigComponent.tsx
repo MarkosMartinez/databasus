@@ -130,6 +130,50 @@ export const EditBackupConfigComponent = ({
     setIsUnsaved(true);
   };
 
+  const addExtraInterval = () => {
+    setBackupConfig((prev) => {
+      if (!prev) return prev;
+
+      const newInterval: Interval = {
+        id: undefined as unknown as string,
+        interval: IntervalType.DAILY,
+        timeOfDay: '04:00',
+      };
+
+      return {
+        ...prev,
+        extraIntervals: [...(prev.extraIntervals ?? []), newInterval],
+      };
+    });
+
+    setIsUnsaved(true);
+  };
+
+  const removeExtraInterval = (index: number) => {
+    setBackupConfig((prev) => {
+      if (!prev) return prev;
+
+      const updated = (prev.extraIntervals ?? []).filter((_, i) => i !== index);
+      return { ...prev, extraIntervals: updated };
+    });
+
+    setIsUnsaved(true);
+  };
+
+  const updateExtraInterval = (index: number, patch: Partial<Interval>) => {
+    setBackupConfig((prev) => {
+      if (!prev) return prev;
+
+      const updated = (prev.extraIntervals ?? []).map((interval, i) =>
+        i === index ? { ...interval, ...patch } : interval,
+      );
+
+      return { ...prev, extraIntervals: updated };
+    });
+
+    setIsUnsaved(true);
+  };
+
   const saveBackupConfig = async () => {
     if (!backupConfig) return;
 
@@ -443,6 +487,89 @@ export const EditBackupConfigComponent = ({
             )}
 
           <div className="mb-3" />
+
+          {/* Extra intervals (additional schedules) */}
+          {(backupConfig.extraIntervals ?? []).length > 0 && (
+            <div className="mb-3">
+              <div className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                Additional schedules
+              </div>
+              {(backupConfig.extraIntervals ?? []).map((extraInterval, index) => (
+                <div
+                  key={index}
+                  className="mb-2 rounded border border-gray-200 p-2 dark:border-gray-700"
+                >
+                  <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
+                    <div className="mb-1 min-w-[150px] sm:mb-0">Interval</div>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={extraInterval.interval}
+                        onChange={(v) => updateExtraInterval(index, { interval: v })}
+                        size="small"
+                        className="w-[150px]"
+                        options={[
+                          { label: 'Hourly', value: IntervalType.HOURLY },
+                          { label: 'Daily', value: IntervalType.DAILY },
+                          { label: 'Weekly', value: IntervalType.WEEKLY },
+                          { label: 'Monthly', value: IntervalType.MONTHLY },
+                          { label: 'Cron', value: IntervalType.CRON },
+                        ]}
+                      />
+                      <Button
+                        size="small"
+                        danger
+                        onClick={() => removeExtraInterval(index)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+
+                  {extraInterval.interval === IntervalType.CRON && (
+                    <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
+                      <div className="mb-1 min-w-[150px] sm:mb-0">Cron (UTC)</div>
+                      <Input
+                        value={extraInterval.cronExpression || ''}
+                        onChange={(e) =>
+                          updateExtraInterval(index, { cronExpression: e.target.value })
+                        }
+                        placeholder="0 2 * * *"
+                        size="small"
+                        className="w-full max-w-[200px]"
+                      />
+                    </div>
+                  )}
+
+                  {extraInterval.interval !== IntervalType.HOURLY &&
+                    extraInterval.interval !== IntervalType.CRON && (
+                      <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
+                        <div className="mb-1 min-w-[150px] sm:mb-0">Time (UTC)</div>
+                        <TimePicker
+                          value={
+                            extraInterval.timeOfDay
+                              ? dayjs.utc(extraInterval.timeOfDay, 'HH:mm').local()
+                              : undefined
+                          }
+                          format={timeFormat.format}
+                          use12Hours={timeFormat.use12Hours}
+                          allowClear={false}
+                          size="small"
+                          className="w-full max-w-[150px]"
+                          onChange={(t) => {
+                            if (!t) return;
+                            updateExtraInterval(index, { timeOfDay: t.utc().format('HH:mm') });
+                          }}
+                        />
+                      </div>
+                    )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Button size="small" onClick={addExtraInterval} className="mb-3">
+            + Add another schedule
+          </Button>
         </>
       )}
 

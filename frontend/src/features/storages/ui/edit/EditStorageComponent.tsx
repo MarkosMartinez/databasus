@@ -220,7 +220,7 @@ export function EditStorageComponent({
     }
 
     if (storage.type === StorageType.LOCAL) {
-      return true; // No additional settings required for local storage
+      return true; // No additional settings required for local storage - path is optional
     }
 
     if (storage.type === StorageType.S3) {
@@ -488,7 +488,16 @@ export function EditStorageComponent({
           />
         )}
 
-        {storage?.type === StorageType.LOCAL && <EditLocalStorageComponent />}
+        {storage?.type === StorageType.LOCAL && (
+          <EditLocalStorageComponent
+            storage={storage}
+            setStorage={setStorage}
+            setUnsaved={() => {
+              setIsUnsaved(true);
+              setIsTestConnectionSuccess(false);
+            }}
+          />
+        )}
       </div>
 
       <div className="mt-3 flex">

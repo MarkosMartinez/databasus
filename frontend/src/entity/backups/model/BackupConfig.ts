@@ -20,6 +20,7 @@ export interface BackupConfig {
   retentionGfsYears: number;
 
   backupInterval?: Interval;
+  extraIntervals?: Interval[];
   storage?: Storage;
   sendNotificationsOn: BackupNotificationType[];
   isRetryIfFailed: boolean;

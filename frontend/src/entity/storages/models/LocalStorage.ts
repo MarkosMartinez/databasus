@@ -1,1 +1,3 @@
-export type LocalStorage = object;
+export interface LocalStorage {
+  storagePath?: string;
+}

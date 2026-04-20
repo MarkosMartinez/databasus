@@ -1,0 +1,2 @@
+ALTER TABLE local_storages
+    ADD COLUMN IF NOT EXISTS storage_path TEXT NOT NULL DEFAULT '';

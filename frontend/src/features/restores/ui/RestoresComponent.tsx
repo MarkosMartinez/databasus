@@ -5,12 +5,12 @@ import {
   ExclamationCircleOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { App, Button, Modal, Spin, Tooltip } from 'antd';
+import { App, Button, Modal, Select, Spin, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
 
 import type { Backup } from '../../../entity/backups';
-import { type Database, DatabaseType } from '../../../entity/databases';
+import { type Database, DatabaseType, databaseApi } from '../../../entity/databases';
 import { type Restore, RestoreStatus, restoreApi } from '../../../entity/restores';
 import { ClipboardHelper } from '../../../shared/lib/ClipboardHelper';
 import { getUserTimeFormat } from '../../../shared/time';
@@ -72,6 +72,7 @@ export const RestoresComponent = ({ database, backup }: Props) => {
 
   const [restores, setRestores] = useState<Restore[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [workspaceDatabases, setWorkspaceDatabases] = useState<Database[]>([]);
 
   const [showingRestoreError, setShowingRestoreError] = useState<Restore | undefined>();
 
@@ -100,6 +101,17 @@ export const RestoresComponent = ({ database, backup }: Props) => {
     isReloadInProgress.current = false;
   };
 
+  const loadWorkspaceDatabases = async () => {
+    if (!database.workspaceId) return;
+
+    try {
+      const databases = await databaseApi.getDatabases(database.workspaceId);
+      setWorkspaceDatabases(databases.filter((db) => db.type === database.type));
+    } catch {
+      // not critical, ignore errors
+    }
+  };
+
   const restore = async (editingDatabase: Database) => {
     try {
       await restoreApi.restoreBackup({
@@ -112,6 +124,13 @@ export const RestoresComponent = ({ database, backup }: Props) => {
     } catch (e) {
       alert((e as Error).message);
     }
+  };
+
+  const handleQuickSelectDatabase = (dbId: string) => {
+    const selectedDb = workspaceDatabases.find((db) => db.id === dbId);
+    if (!selectedDb) return;
+
+    setEditingDatabase(createInitialEditingDatabase(selectedDb));
   };
 
   const cancelRestore = async (restoreId: string) => {
@@ -129,6 +148,7 @@ export const RestoresComponent = ({ database, backup }: Props) => {
   useEffect(() => {
     setIsLoading(true);
     loadRestores().finally(() => setIsLoading(false));
+    loadWorkspaceDatabases();
 
     const interval = setInterval(() => {
       loadRestores();
@@ -153,6 +173,23 @@ export const RestoresComponent = ({ database, backup }: Props) => {
           Make sure the database is not used right now (most likely you do not want to restore the
           data to the same DB where the backup was made)
         </div>
+
+        {workspaceDatabases.length > 0 && (
+          <div className="mb-4">
+            <div className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Quick select a configured database:
+            </div>
+            <Select
+              className="w-full"
+              placeholder="Select a configured database to pre-fill connection info"
+              allowClear
+              options={workspaceDatabases.map((db) => ({ value: db.id, label: db.name }))}
+              onChange={(value) => {
+                if (value) handleQuickSelectDatabase(value as string);
+              }}
+            />
+          </div>
+        )}
 
         <EditDatabaseSpecificDataComponent
           database={editingDatabase}

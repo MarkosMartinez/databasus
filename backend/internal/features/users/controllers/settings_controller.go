@@ -15,6 +15,10 @@ type SettingsController struct {
 	settingsService *users_services.SettingsService
 }
 
+func (c *SettingsController) RegisterPublicRoutes(router *gin.RouterGroup) {
+	router.GET("/users/settings/public", c.GetPublicUsersSettings)
+}
+
 func (c *SettingsController) RegisterRoutes(router *gin.RouterGroup) {
 	router.GET("/users/settings", c.GetUsersSettings)
 	router.PUT(
@@ -22,6 +26,26 @@ func (c *SettingsController) RegisterRoutes(router *gin.RouterGroup) {
 		user_middleware.RequireRole(user_enums.UserRoleAdmin),
 		c.UpdateUsersSettings,
 	)
+}
+
+// GetPublicUsersSettings
+// @Summary Get public users settings
+// @Description Get publicly accessible settings (no authentication required)
+// @Tags settings
+// @Produce json
+// @Success 200 {object} map[string]bool
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /users/settings/public [get]
+func (c *SettingsController) GetPublicUsersSettings(ctx *gin.Context) {
+	settings, err := c.settingsService.GetSettings()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get settings"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"isAllowExternalRegistrations": settings.IsAllowExternalRegistrations,
+	})
 }
 
 // GetUsersSettings

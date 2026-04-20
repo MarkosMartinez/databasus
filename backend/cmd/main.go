@@ -221,6 +221,7 @@ func setUpRoutes(r *gin.Engine) {
 	backups_controllers.GetBackupController().RegisterPublicRoutes(v1)
 	backups_controllers.GetPostgresWalBackupController().RegisterRoutes(v1)
 	databases.GetDatabaseController().RegisterPublicRoutes(v1)
+	users_controllers.GetSettingsController().RegisterPublicRoutes(v1)
 
 	if config.GetEnv().IsCloud {
 		billing_paddle.GetPaddleBillingController().RegisterPublicRoutes(v1)
