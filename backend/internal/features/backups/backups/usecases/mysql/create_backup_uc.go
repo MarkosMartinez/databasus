@@ -111,9 +111,7 @@ func (uc *CreateMysqlBackupUsecase) buildMysqldumpArgs(my *mysqltypes.MysqlDatab
 		"--routines",
 		"--set-gtid-purged=OFF",
 		"--quick",
-		"--skip-extended-insert",
 		"--skip-add-locks",
-		"--verbose",
 	}
 
 	if my.HasPrivilege("EVENT") {

@@ -69,7 +69,6 @@ func (uc *RestoreMysqlBackupUsecase) Execute(
 		"--protocol=tcp",
 		"--default-character-set=utf8",
 		"--user=" + my.Username,
-		"--verbose",
 	}
 
 	if !config.GetEnv().IsCloud {

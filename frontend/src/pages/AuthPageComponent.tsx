@@ -16,6 +16,7 @@ import { useScreenHeight } from '../shared/hooks';
 
 export function AuthPageComponent() {
   const [isAdminHasPassword, setIsAdminHasPassword] = useState(false);
+  const [isRegistrationEnabled, setIsRegistrationEnabled] = useState(false);
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp' | 'requestReset' | 'resetPassword'>(
     'signIn',
   );
@@ -29,6 +30,7 @@ export function AuthPageComponent() {
     Promise.all([userApi.isAdminHasPassword(), userApi.getPublicSettings()])
       .then(([passwordResponse, settingsResponse]) => {
         setIsAdminHasPassword(passwordResponse.hasPassword);
+        setIsRegistrationEnabled(settingsResponse.isAllowExternalRegistrations);
         setAuthMode(settingsResponse.isAllowExternalRegistrations ? 'signUp' : 'signIn');
         setLoading(false);
       })
@@ -60,6 +62,7 @@ export function AuthPageComponent() {
                   <SignInComponent
                     onSwitchToSignUp={() => setAuthMode('signUp')}
                     onSwitchToResetPassword={() => setAuthMode('requestReset')}
+                    isRegistrationEnabled={isRegistrationEnabled}
                   />
                 ) : authMode === 'requestReset' ? (
                   <RequestResetPasswordComponent
