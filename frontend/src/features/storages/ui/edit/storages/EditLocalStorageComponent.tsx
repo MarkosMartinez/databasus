@@ -1,7 +1,7 @@
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 
-import type { Storage } from '../../../../entity/storages';
+import type { Storage } from '../../../../../entity/storages';
 
 interface Props {
   storage: Storage;
