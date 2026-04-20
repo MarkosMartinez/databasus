@@ -23,7 +23,6 @@ import {
   WorkspaceSettingsComponent,
 } from '../../features/workspaces';
 import { useIsMobile, useScreenHeight } from '../../shared/hooks';
-import { StarButtonComponent } from '../../shared/ui/StarButtonComponent';
 import { ThemeToggleComponent } from '../../shared/ui/ThemeToggleComponent';
 import { SidebarComponent } from './SidebarComponent';
 import { WorkspaceSelectionComponent } from './WorkspaceSelectionComponent';
@@ -230,17 +229,6 @@ export const MainScreenComponent = () => {
             Community
           </a>
 
-          {!IS_CLOUD && (
-            <a
-              className="!text-black hover:opacity-80 dark:!text-gray-200"
-              href="https://databasus.com/cloud"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Cloud
-            </a>
-          )}
-
           {isUsedMoreThan85Percent && (
             <Tooltip title="To make backups locally and restore them, you need to have enough space on your disk. For restore, you need to have same amount of space that the backup size.">
               <div
@@ -256,8 +244,6 @@ export const MainScreenComponent = () => {
           )}
 
           <div className="flex items-center gap-2">
-            <StarButtonComponent />
-
             <ThemeToggleComponent />
           </div>
         </div>

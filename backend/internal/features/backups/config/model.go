@@ -1,7 +1,9 @@
 package backups_config
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
@@ -30,6 +32,9 @@ type BackupConfig struct {
 
 	BackupIntervalID uuid.UUID           `json:"backupIntervalId"        gorm:"column:backup_interval_id;type:uuid;not null"`
 	BackupInterval   *intervals.Interval `json:"backupInterval,omitzero" gorm:"foreignKey:BackupIntervalID"`
+
+	ExtraIntervals     []intervals.Interval `json:"extraIntervals"     gorm:"-"`
+	ExtraIntervalsJSON string               `json:"-"                  gorm:"column:extra_intervals_json;type:text;not null;default:''"`
 
 	Storage   *storages.Storage `json:"storage"   gorm:"foreignKey:StorageID"`
 	StorageID *uuid.UUID        `json:"storageId" gorm:"column:storage_id;type:uuid;"`
@@ -61,6 +66,18 @@ func (b *BackupConfig) BeforeSave(tx *gorm.DB) error {
 		b.SendNotificationsOnString = ""
 	}
 
+	// Serialize ExtraIntervals to JSON
+	if len(b.ExtraIntervals) > 0 {
+		extraJSON, err := json.Marshal(b.ExtraIntervals)
+		if err != nil {
+			return err
+		}
+
+		b.ExtraIntervalsJSON = string(extraJSON)
+	} else {
+		b.ExtraIntervalsJSON = ""
+	}
+
 	return nil
 }
 
@@ -75,6 +92,18 @@ func (b *BackupConfig) AfterFind(tx *gorm.DB) error {
 		}
 	} else {
 		b.SendNotificationsOn = []BackupNotificationType{}
+	}
+
+	// Deserialize ExtraIntervals from JSON
+	if b.ExtraIntervalsJSON != "" {
+		var extraIntervals []intervals.Interval
+		if err := json.Unmarshal([]byte(b.ExtraIntervalsJSON), &extraIntervals); err != nil {
+			return err
+		}
+
+		b.ExtraIntervals = extraIntervals
+	} else {
+		b.ExtraIntervals = []intervals.Interval{}
 	}
 
 	return nil
@@ -104,10 +133,23 @@ func (b *BackupConfig) Validate() error {
 		}
 	}
 
+	for i, extraInterval := range b.ExtraIntervals {
+		extraIntervalCopy := extraInterval
+		if err := extraIntervalCopy.Validate(); err != nil {
+			return fmt.Errorf("extra interval %d is invalid: %w", i+1, err)
+		}
+	}
+
 	return nil
 }
 
 func (b *BackupConfig) Copy(newDatabaseID uuid.UUID) *BackupConfig {
+	extraIntervalsCopy := make([]intervals.Interval, len(b.ExtraIntervals))
+	for i, interval := range b.ExtraIntervals {
+		copied := interval.Copy()
+		extraIntervalsCopy[i] = *copied
+	}
+
 	return &BackupConfig{
 		DatabaseID:          newDatabaseID,
 		IsBackupsEnabled:    b.IsBackupsEnabled,
@@ -126,6 +168,7 @@ func (b *BackupConfig) Copy(newDatabaseID uuid.UUID) *BackupConfig {
 		IsRetryIfFailed:     b.IsRetryIfFailed,
 		MaxFailedTriesCount: b.MaxFailedTriesCount,
 		Encryption:          b.Encryption,
+		ExtraIntervals:      extraIntervalsCopy,
 	}
 }
 

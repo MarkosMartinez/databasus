@@ -102,19 +102,18 @@ func (uc *CreateMysqlBackupUsecase) buildMysqldumpArgs(my *mysqltypes.MysqlDatab
 	args := []string{
 		"--host=" + my.Host,
 		"--port=" + strconv.Itoa(my.Port),
+		"--protocol=tcp",
+		"--default-character-set=utf8",
 		"--user=" + my.Username,
-		"--single-transaction",
+		"--column-statistics=FALSE",
+		"--single-transaction=TRUE",
+		"--skip-triggers",
 		"--routines",
 		"--set-gtid-purged=OFF",
 		"--quick",
-		"--skip-extended-insert",
 		"--skip-add-locks",
-		"--verbose",
 	}
 
-	if my.HasPrivilege("TRIGGER") {
-		args = append(args, "--triggers")
-	}
 	if my.HasPrivilege("EVENT") {
 		args = append(args, "--events")
 	}

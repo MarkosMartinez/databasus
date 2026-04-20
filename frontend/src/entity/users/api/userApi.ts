@@ -59,6 +59,14 @@ export const userApi = {
       });
   },
 
+  async getPublicSettings(): Promise<{ isAllowExternalRegistrations: boolean }> {
+    const requestOptions: RequestOptions = new RequestOptions();
+    return apiHelper.fetchGetJson(
+      `${getApplicationServer()}/api/v1/users/settings/public`,
+      requestOptions,
+    );
+  },
+
   async isAnyUserExists(): Promise<boolean> {
     const requestOptions: RequestOptions = new RequestOptions();
     return apiHelper

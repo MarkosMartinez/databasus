@@ -20,11 +20,13 @@ import { GoogleOAuthComponent } from './oauth/GoogleOAuthComponent';
 interface SignInComponentProps {
   onSwitchToSignUp?: () => void;
   onSwitchToResetPassword?: () => void;
+  isRegistrationEnabled?: boolean;
 }
 
 export function SignInComponent({
   onSwitchToSignUp,
   onSwitchToResetPassword,
+  isRegistrationEnabled = true,
 }: SignInComponentProps): JSX.Element {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -152,15 +154,19 @@ export function SignInComponent({
       )}
 
       <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-        Don&apos;t have an account?{' '}
-        <button
-          type="button"
-          onClick={onSwitchToSignUp}
-          className="cursor-pointer font-medium text-blue-600 hover:text-blue-700 dark:!text-blue-500"
-        >
-          Sign up
-        </button>
-        <br />
+        {isRegistrationEnabled && (
+          <>
+            Don&apos;t have an account?{' '}
+            <button
+              type="button"
+              onClick={onSwitchToSignUp}
+              className="cursor-pointer font-medium text-blue-600 hover:text-blue-700 dark:!text-blue-500"
+            >
+              Sign up
+            </button>
+            <br />
+          </>
+        )}
         {IS_EMAIL_CONFIGURED && (
           <button
             type="button"

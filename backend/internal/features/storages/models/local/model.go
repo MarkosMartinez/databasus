@@ -24,15 +24,32 @@ const (
 	localChunkSize = 8 * 1024 * 1024
 )
 
-// LocalStorage uses ./databasus_local_backups folder as a
+// LocalStorage uses StoragePath (if set) or ./databasus_local_backups folder as a
 // directory for backups and ./databasus_local_temp folder as a
 // directory for temp files
 type LocalStorage struct {
-	StorageID uuid.UUID `json:"storageId" gorm:"primaryKey;type:uuid;column:storage_id"`
+	StorageID   uuid.UUID `json:"storageId"   gorm:"primaryKey;type:uuid;column:storage_id"`
+	StoragePath string    `json:"storagePath" gorm:"column:storage_path;type:text;not null;default:''"`
 }
 
 func (l *LocalStorage) TableName() string {
 	return "local_storages"
+}
+
+func (l *LocalStorage) getDataFolder() string {
+	if l.StoragePath != "" {
+		return l.StoragePath
+	}
+
+	return config.GetEnv().DataFolder
+}
+
+func (l *LocalStorage) getTempFolder() string {
+	if l.StoragePath != "" {
+		return filepath.Join(l.StoragePath, ".tmp")
+	}
+
+	return config.GetEnv().TempFolder
 }
 
 func (l *LocalStorage) SaveFile(
@@ -50,10 +67,10 @@ func (l *LocalStorage) SaveFile(
 
 	logger.Info("Starting to save file to local storage", "fileName", fileName)
 
-	tempFilePath := filepath.Join(config.GetEnv().TempFolder, fileName)
+	tempFilePath := filepath.Join(l.getTempFolder(), fileName)
 
 	err := files_utils.EnsureDirectories([]string{
-		config.GetEnv().TempFolder,
+		l.getTempFolder(),
 		filepath.Dir(tempFilePath),
 	})
 	if err != nil {
@@ -96,7 +113,7 @@ func (l *LocalStorage) SaveFile(
 		return fmt.Errorf("failed to close temp file: %w", err)
 	}
 
-	finalPath := filepath.Join(config.GetEnv().DataFolder, fileName)
+	finalPath := filepath.Join(l.getDataFolder(), fileName)
 	logger.Debug(
 		"Moving file from temp to final location",
 		"fileName",
@@ -140,7 +157,7 @@ func (l *LocalStorage) GetFile(
 	encryptor encryption.FieldEncryptor,
 	fileName string,
 ) (io.ReadCloser, error) {
-	filePath := filepath.Join(config.GetEnv().DataFolder, fileName)
+	filePath := filepath.Join(l.getDataFolder(), fileName)
 
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("file not found: %s", fileName)
@@ -155,7 +172,7 @@ func (l *LocalStorage) GetFile(
 }
 
 func (l *LocalStorage) DeleteFile(encryptor encryption.FieldEncryptor, fileName string) error {
-	filePath := filepath.Join(config.GetEnv().DataFolder, fileName)
+	filePath := filepath.Join(l.getDataFolder(), fileName)
 
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return nil
@@ -173,7 +190,12 @@ func (l *LocalStorage) Validate(encryptor encryption.FieldEncryptor) error {
 }
 
 func (l *LocalStorage) TestConnection(encryptor encryption.FieldEncryptor) error {
-	testFile := filepath.Join(config.GetEnv().TempFolder, "test_connection")
+	testFile := filepath.Join(l.getTempFolder(), "test_connection")
+
+	if err := files_utils.EnsureDirectories([]string{l.getTempFolder()}); err != nil {
+		return fmt.Errorf("failed to ensure temp directory: %w", err)
+	}
+
 	f, err := os.Create(testFile)
 	if err != nil {
 		return fmt.Errorf("failed to create test file: %w", err)
@@ -197,6 +219,7 @@ func (l *LocalStorage) EncryptSensitiveData(encryptor encryption.FieldEncryptor)
 }
 
 func (l *LocalStorage) Update(incoming *LocalStorage) {
+	l.StoragePath = incoming.StoragePath
 }
 
 // moveFile moves a file from src to dst. It first attempts os.Rename for efficiency.

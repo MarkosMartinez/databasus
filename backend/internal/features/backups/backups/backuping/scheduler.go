@@ -347,8 +347,17 @@ func (s *BackupsScheduler) runPendingBackups() error {
 
 		remainedBackupTryCount := s.GetRemainedBackupTryCount(lastBackup)
 
-		if backupConfig.BackupInterval.ShouldTriggerBackup(time.Now().UTC(), lastBackupTime) ||
-			remainedBackupTryCount > 0 {
+		shouldTrigger := backupConfig.BackupInterval.ShouldTriggerBackup(time.Now().UTC(), lastBackupTime)
+		if !shouldTrigger {
+			for i := range backupConfig.ExtraIntervals {
+				if backupConfig.ExtraIntervals[i].ShouldTriggerBackup(time.Now().UTC(), lastBackupTime) {
+					shouldTrigger = true
+					break
+				}
+			}
+		}
+
+		if shouldTrigger || remainedBackupTryCount > 0 {
 			s.logger.Info(
 				"Triggering scheduled backup",
 				"databaseId",

@@ -66,8 +66,9 @@ func (uc *RestoreMysqlBackupUsecase) Execute(
 	args := []string{
 		"--host=" + my.Host,
 		"--port=" + strconv.Itoa(my.Port),
+		"--protocol=tcp",
+		"--default-character-set=utf8",
 		"--user=" + my.Username,
-		"--verbose",
 	}
 
 	if !config.GetEnv().IsCloud {
